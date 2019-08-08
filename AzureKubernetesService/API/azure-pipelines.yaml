@@ -1,0 +1,83 @@
+trigger:
+  - master
+
+variables:
+  Version: '$(Build.BuildId)'
+  
+stages:
+  - stage: Test
+    displayName: Run Tests
+    jobs:
+      - job: Test
+        displayName: Run Jest Tests
+        pool:
+          vmImage: 'ubuntu-16.04'
+        steps:
+          - task: Npm@0
+            displayName: Npm install
+            inputs:
+              command: install
+          - task: Npm@0
+            displayName: Npm Run Test
+            inputs:
+              command: run
+              arguments: test
+            continueOnError: false
+
+  - stage: Docker
+    dependsOn: Test
+    displayName: Prepare Image
+    jobs:
+      - job: Build
+        displayName: Build And Push Docker Image
+        pool:
+          vmImage: 'ubuntu-16.04'
+        steps:
+          - task: Docker@2
+            displayName: Build And Push AD Service Docker Image To Azure Container containerRegistry
+            inputs:
+              command: buildAndPush
+              containerRegistry: ADServiceACRServiceConnection
+              repository: adservice
+              tags: $(Version)
+
+  - stage: Modify
+    dependsOn: Docker
+    displayName: Modify Kubernetes Deployment YAML
+    jobs:
+      - job: PostBuild
+        displayName: Modify Kubernetes Deployment YAML
+        pool:
+          vmImage: 'ubuntu-16.04'
+        steps:
+          - task: Bash@3
+            displayName: Replace '<tag>' With Version Number
+            inputs:
+              targetType: inline
+              script: sed -i 's/<tag>/$(Version)/g' $(System.DefaultWorkingDirectory)/kubernetes-deployment.yaml
+            continueOnError: false
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: kubernetes-deployment.yaml
+              ArtifactName: YAML
+  
+  - stage: Release
+    dependsOn: Modify
+    displayName: Update Kubernetes Deployment
+    jobs:
+      - job: Release
+        displayName: Apply New Kubernetes Deployment YAML To Existing Cluster
+        pool:
+          vmImage: 'ubuntu-16.04'
+        steps:
+          - task: DownloadBuildArtifacts@0
+            inputs:
+              artifactName: YAML
+          - task: Kubernetes@1
+            inputs:
+              connectionType: Kubernetes Service Connection
+              kubernetesServiceEndpoint: SchedulingKubernetesServiceConnection
+              command: apply
+              arguments: -f $(System.ArtifactsDirectory)/YAML/kubernetes-deployment.yaml              
+        
+    

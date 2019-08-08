@@ -1,0 +1,180 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "resources": [
+      {
+        "name": "scheduling-cluster",
+        "type": "Microsoft.ContainerService/managedClusters",
+        "apiVersion": "2019-06-01",
+        "location": "australiaeast",
+        "properties": {
+          "dnsPrefix": "scheduling-cluster",
+          "agentPoolProfiles": [
+            {
+              "name": "kubeagent",
+              "count": 1,
+              "vmSize": "Standard_B2s"
+            }
+          ],
+          "servicePrincipalProfile": {
+            "clientId": "0b4d9306-df48-4ff9-bf39-3a2118c649e3",
+            "secret": "234e7e66-05bd-4623-8935-275eaf1e57d5"
+          }
+        }
+      },
+      {
+        "name": "scheduling",
+        "type": "Microsoft.ContainerRegistry/registries",
+        "apiVersion": "2019-05-01",
+        "location": "australiaeast",
+        "sku": {
+          "name": "Basic"
+        },
+        "properties": {
+          "adminUserEnabled": true
+        }
+      },
+      {
+        "apiVersion": "2019-04-01",
+        "type": "Microsoft.Storage/storageAccounts",
+        "name": "schedulingstorageaccount",
+        "location": "australiaeast",
+        "sku": {
+            "name": "Standard_LRS"
+        },
+        "kind": "Storage",
+        "properties": {}
+      },
+      {
+        "apiVersion": "2015-05-01-preview",
+        "location": "australiaeast",
+        "name": "scheduling-sql-server",
+        "type": "Microsoft.Sql/servers",
+        "properties": {
+            "administratorLogin": "",
+            "administratorLoginPassword": "",
+            "version": "12.0"
+        },
+        "resources": [
+          {
+            "apiVersion": "2017-10-01-preview",
+            "dependsOn": [
+              "Microsoft.Sql/servers/scheduling-sql-server"
+            ],
+            "location": "australiaeast",
+            "name": "scheduling-sql-server/scheduling-elastic-pool",
+            "type": "Microsoft.Sql/servers/elasticpools",
+            "sku": {
+              "name": "BasicPool",
+              "tier": "Basic",
+              "capacity": "50"
+            },
+            "properties": {
+              "perDatabaseSettings": {
+                "minCapacity": "0",
+                "maxCapacity": "5"
+              },
+              "zoneRedundant": false,
+              "licenseType": "",
+              "storageMB": 5242880000
+            }
+          },
+          {
+            "apiVersion": "2017-10-01-preview",
+            "dependsOn": [
+              "Microsoft.Sql/servers/scheduling-sql-server",
+              "Microsoft.Sql/servers/scheduling-sql-server/elasticpools/scheduling-elastic-pool"
+            ],
+            "location": "australiaeast",
+            "name": "scheduling",
+            "type": "databases",
+            "properties": {
+              "collation": "SQL_Latin1_General_CP1_CI_AS",
+              "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', 'scheduling-sql-server' , 'scheduling-elastic-pool')]",
+              "sampleName": "",
+              "zoneRedundant": false,
+              "licenseType": ""
+            }
+          },
+          {
+            "apiVersion": "2017-10-01-preview",
+            "dependsOn": [
+              "Microsoft.Sql/servers/scheduling-sql-server",
+              "Microsoft.Sql/servers/scheduling-sql-server/elasticpools/scheduling-elastic-pool"
+            ],
+            "location": "australiaeast",
+            "name": "",
+            "type": "databases",
+            "properties": {
+              "collation": "SQL_Latin1_General_CP1_CI_AS",
+              "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', 'scheduling-sql-server' , 'scheduling-elastic-pool')]",
+              "sampleName": "",
+              "zoneRedundant": false,
+              "licenseType": ""
+            }
+          },
+          {
+            "apiVersion": "2017-10-01-preview",
+            "dependsOn": [
+              "Microsoft.Sql/servers/scheduling-sql-server",
+              "Microsoft.Sql/servers/scheduling-sql-server/elasticpools/scheduling-elastic-pool"
+            ],
+            "location": "australiaeast",
+            "name": "testorg1-scheduling",
+            "type": "databases",
+            "properties": {
+              "collation": "SQL_Latin1_General_CP1_CI_AS",
+              "elasticPoolId": "[resourceId('Microsoft.Sql/servers/elasticpools', 'scheduling-sql-server' , 'scheduling-elastic-pool')]",
+              "sampleName": "",
+              "zoneRedundant": false,
+              "licenseType": ""
+            }
+          },
+          {
+            "condition": true,
+            "apiVersion": "2014-04-01-preview",
+            "dependsOn": [
+              "Microsoft.Sql/servers/scheduling-sql-server"
+            ],
+            "location": "australiaeast",
+            "name": "AllowAllWindowsAzureIps",
+            "type": "firewallrules",
+            "properties": {
+              "endIpAddress": "0.0.0.0",
+              "startIpAddress": "0.0.0.0"
+            }
+          },
+          {
+            "condition": false,
+            "apiVersion": "2017-03-01-preview",
+            "type": "securityAlertPolicies",
+            "name": "Default",
+            "dependsOn": [
+              "Microsoft.Sql/servers/scheduling-sql-server",
+              "Microsoft.Sql/servers/scheduling-sql-server/databases/scheduling"
+            ],
+            "properties": {
+              "state": "Enabled",
+              "disabledAlerts": [],
+              "emailAddresses": [],
+              "emailAccountAdmins": true
+            }
+          }
+        ]
+      },
+      {
+        "apiVersion": "2019-01-01",
+        "name": "scheduling",
+        "location": "australiaeast",
+        "type": "Microsoft.ApiManagement/service",
+        "sku": {
+          "name": "Developer",
+          "capacity": "1"
+        },
+        "properties": {
+          "publisherEmail": "",
+          "publisherName": ""
+        }
+      }
+    ]
+  }

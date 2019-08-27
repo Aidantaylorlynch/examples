@@ -1,0 +1,43 @@
+# Uncomment the next line to define a global platform for your project
+# platform :ios, '9.0'
+
+target 'EngageMeReactNativeCLI' do
+  pod 'yoga', :path => '../node_modules/react-native/ReactCommon/yoga'
+  pod 'React', :path => '../node_modules/react-native'
+  pod 'AppCenter/Push', '~> 2.1.0'
+  pod 'AppCenter/Crashes', '~> 2.1.0'
+  pod 'AppCenter/Analytics', '~> 2.1.0'
+  pod 'AppCenterReactNativeShared', '~> 2.1.0'
+  pod 'appcenter', path: '../node_modules/appcenter/ios'
+  pod 'appcenter-analytics', path: '../node_modules/appcenter-analytics/ios'
+  pod 'appcenter-crashes', path: '../node_modules/appcenter-crashes/ios'
+  pod 'appcenter-push', path: '../node_modules/appcenter-push/ios'
+  # Comment the next line if you don't want to use dynamic frameworks
+  use_frameworks!
+
+  # Pods for EngageMeReactNativeCLI
+
+  
+
+  platform :ios, '9.0'
+  pod 'rn-fetch-blob', :path => '../node_modules/rn-fetch-blob'
+
+  target 'EngageMeReactNativeCLITests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
+
+target 'EngageMeReactNativeCLI-tvOS' do
+  # Comment the next line if you don't want to use dynamic frameworks
+  use_frameworks!
+
+  # Pods for EngageMeReactNativeCLI-tvOS
+
+  target 'EngageMeReactNativeCLI-tvOSTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
